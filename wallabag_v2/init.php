@@ -16,17 +16,24 @@ class Wallabag_v2 extends Plugin {
 	}
 
 	function save() {
-	    $wallabag_url = db_escape_string($_POST["wallabag_url"]);
-	    $wallabag_username = db_escape_string($_POST["wallabag_username"]);
-	    $wallabag_password = db_escape_string($_POST["wallabag_password"]);
-	    $wallabag_client_id = db_escape_string($_POST["wallabag_client_id"]);
-	    $wallabag_client_secret = db_escape_string($_POST["wallabag_client_secret"]);
-	    $this->host->set($this, "wallabag_url", $wallabag_url);
-	    $this->host->set($this, "wallabag_username", $wallabag_username);
-	    $this->host->set($this, "wallabag_password", $wallabag_password);
-	    $this->host->set($this, "wallabag_client_id", $wallabag_client_id);
-	    $this->host->set($this, "wallabag_client_secret", $wallabag_client_secret);
-	    echo "Ready to send to Wallabag at $wallabag_url";
+		if(!isset($_POST["wallabag_url"], $_POST["wallabag_username"], $_POST["wallabag_password"], $_POST["wallabag_client_id"], $_POST["wallabag_client_secret"])) // TODO test is_string/!is_array
+			return;
+		$wallabag_url = db_escape_string($_POST["wallabag_url"]);
+		$wallabag_username = db_escape_string($_POST["wallabag_username"]);
+
+		if(strlen($_POST["wallabag_password"]) === 0)
+			$wallabag_password = null;
+		else
+			$wallabag_password = db_escape_string($_POST["wallabag_password"]);
+		$wallabag_client_id = db_escape_string($_POST["wallabag_client_id"]);
+		$wallabag_client_secret = db_escape_string($_POST["wallabag_client_secret"]);
+		$this->host->set($this, "wallabag_url", $wallabag_url);
+		$this->host->set($this, "wallabag_username", $wallabag_username);
+		if($wallabag_password !== null)
+			$this->host->set($this, "wallabag_password", $wallabag_password);
+		$this->host->set($this, "wallabag_client_id", $wallabag_client_id);
+		$this->host->set($this, "wallabag_client_secret", $wallabag_client_secret);
+		echo "Ready to send to Wallabag at $wallabag_url";
 	}
 
 	function get_js() {
@@ -43,6 +50,8 @@ class Wallabag_v2 extends Plugin {
 		 $w_url = $this->host->get($this, "wallabag_url");
 		 $w_user = $this->host->get($this, "wallabag_username");
 		 $w_pass = $this->host->get($this, "wallabag_password");
+		 if(strlen($w_pass)) $saved = ' (saved)';
+		 else $saved = '';
 		 $w_cid = $this->host->get($this, "wallabag_client_id");
 		 $w_csec = $this->host->get($this, "wallabag_client_secret");
 		 print "<form dojoType=\"dijit.form.Form\">";
@@ -68,8 +77,8 @@ class Wallabag_v2 extends Plugin {
 		print "<td class=\"prefValue\"><input dojoType=\"dijit.form.ValidationTextBox\" required=\"true\" name=\"wallabag_url\" regExp='^(http|https)://.*' value=\"$w_url\"></td></tr>";
 		print "<tr><td width=\"40%\">".__("Wallabag Username")."</td>";
 		print "<td class=\"prefValue\"><input dojoType=\"dijit.form.ValidationTextBox\" name=\"wallabag_username\" regExp='\w{0,64}' value=\"$w_user\"></td></tr>";
-		print "<tr><td width=\"40%\">".__("Wallabag Password")."</td>";
-		print "<td class=\"prefValue\"><input type=\"password\" dojoType=\"dijit.form.ValidationTextBox\" name=\"wallabag_password\" regExp='.{0,64}' value=\"$w_pass\"></td></tr>";
+		print "<tr><td width=\"40%\">".__("Wallabag Password{$saved}")."</td>";
+		print "<td class=\"prefValue\"><input type=\"password\" dojoType=\"dijit.form.ValidationTextBox\" name=\"wallabag_password\" regExp='.{0,128}' value=\"\"></td></tr>";
 		print "<tr><td width=\"40%\">".__("Wallabag Client ID")."</td>";
 		print "<td class=\"prefValue\"><input dojoType=\"dijit.form.ValidationTextBox\" name=\"wallabag_client_id\" regExp='.{0,64}' value=\"$w_cid\"></td></tr>";
 		print "<tr><td width=\"40%\">".__("Wallabag Client Secret")."</td>";
@@ -112,7 +121,31 @@ class Wallabag_v2 extends Plugin {
 	        $wallabag_client_id = $this->host->get($this, "wallabag_client_id");
 	        $wallabag_client_secret = $this->host->get($this, "wallabag_client_secret");
 
-		include 'oauth.php';
+		$endpoint = $wallabag_url . '/oauth/v2/token';
+		$params = array(
+			'client_id' => $wallabag_client_id,
+			'client_secret' => $wallabag_client_secret,
+			'username' => $wallabag_username,
+			'password' => $wallabag_password,
+			'grant_type' => 'password');
+		$query = http_build_query ($params);
+		$contextData = array(
+				'method' => 'POST',
+				'header' => 'Content-Type: application/x-www-form-urlencoded'."\r\n".
+					    'Content-Length: '.strlen($query)."\r\n".
+					    'User-Agent: tt-rss/1.0'."\r\n",
+				'content'=> $query);
+		$context = stream_context_create (array ( 'http' => $contextData ));
+		$result =  file_get_contents (
+				  $endpoint,
+				  false,
+				  $context);
+		// Is there a better way to isolate this from the ugly string returned from Wallabag?
+		$wallabag_access_token = substr($result, 17, 86);
+		// Uncomment the next line in order to expose the refresh token.
+		// $refresh_token = substr($result, 175, 86);
+		// Set the api endpoint for use later
+		$wallabag_api = $wallabag_url . '/api/entries.json';
 
 		if (function_exists('curl_init')) {
 	 		 $postfields = array(
@@ -134,11 +167,9 @@ class Wallabag_v2 extends Plugin {
 			 $status = 'For the plugin to work you need to <strong>enable PHP extension CURL</strong>!';
 			}
 
-		print json_encode(array("wallabag_url" => $wallabag_url,
-					"wallabag_username" => $wallabag_username,
-					"wallabag_password" => $wallabag_password,
-					"wallabag_client_id" => $wallabag_client_id,
-					"wallabag_client_secret" => $wallabag_client_secret,
+		print json_encode(array(
+					"dbg1" => $query,
+					"dbg2" => $endpoint,
 					"title" => $title,
 					"status" => $status));
 	}
