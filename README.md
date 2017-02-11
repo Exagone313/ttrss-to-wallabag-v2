@@ -19,7 +19,7 @@ A Wallabag v 2.x plugin for Tiny-Tiny-RSS designed to login via Oauth and work w
 
 ### Troubleshoot
 
-If you keep getting 404 errors, check if you didn't add a trailing slash to the url of your Wallabag instances in preferences.
+If you keep getting 404 errors, check if you didn't add a trailing slash to the url of your Wallabag instance in preferences.
 
 For 400 errors, check your credentials.
 
