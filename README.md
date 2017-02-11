@@ -6,39 +6,22 @@ A Wallabag v 2.x plugin for Tiny-Tiny-RSS designed to login via Oauth and work w
 
 ### Installing the plugin:
 
-1. Clone this repo or just grab the [latest release](https://github.com/joshp23/ttrss-to-wallabag-v2/releases/latest) and extract the wallabag_v2 folder into the plugins.local folder of your ttrss:  
+1. Clone this repository in a directory readable by your http server or php-fpm daemon.
 
-2. Prepare your server
+2. Add a symbolic link from `tt-rss/plugins.local/wallabag_v2` to the directory `wallabag_v2` of this repository.
 
-	* Install PHP Curl
+3. Get Oauth token configuration
 
-		```
-		sudo apt-get install php5-curl
-		```
-	* Set this option in `php.ini`
-	
-		```
-		allow_url_fopen = On
-		```
-	* Restart the application for changes to take place.  
-		* php-fpm:
-
-			```bash
-			sudo service php5-fpm restart
-			```
-		* Or just restart apache:  
-
-			```bash
-			sudo service apache2 restart
-			```
-3. Getting the Oauth Token/Configuration
-
-	* In Wallabag: Create a new Oath client in the Developer tab, take note of the client id and client secret.
-	* In TT-Rss: Enable the plugin and simply fill in the details in the Wallabag V2 Preferences dialogue.
+	* In Wallabag: Create a new Oauth client in the Developer tab, take note of the client id and client secret.
+	* In TT-Rss: Enable the plugin and enter the Wallabag credentials in the *Wallabag v2* accordion pane below *Plugins*: *username*, *password*, *client_id* and *client_secret*.
      	
-	Special Note: Do not add a trailing slash to any URL in either the Wallabag or TT-RSS settings or you will get nothing but 404 responses!
+4. Enjoy posting directly to Wallabag with 1-click in the footer of each article!
 
-4. Enjoy posting directly to Wallabag with 1-click
+### Troubleshoot
+
+If you keep getting 404 errors, check if you didn't add a trailing slash to the url of your Wallabag instances in preferences.
+
+For 400 errors, check your credentials.
 
 ### TODO ... which may or not actually ever get done...
 
@@ -47,6 +30,7 @@ A Wallabag v 2.x plugin for Tiny-Tiny-RSS designed to login via Oauth and work w
 3. Add tag support
 4. Add hotkey support
 5. Add colour changing button
+6. Rewrite the entire code as it's really dirty.
 
 ### Helpfull Links:
 
@@ -57,7 +41,8 @@ A Wallabag v 2.x plugin for Tiny-Tiny-RSS designed to login via Oauth and work w
 
 ### Credits
 
-Code for this project exists because of:
+Thanks to:
 
 * [fxneumann's OneClickPocket plugin for TTRSS](https://github.com/fxneumann/oneclickpocket)
 * [xppppp's Wallabag v1 plugin for TTRSS](https://github.com/xppppp/ttrss-wallabag-plugin)
+* [joshp23's version of this plugin](https://github.com/joshp23/ttrss-to-wallabag-v2)
