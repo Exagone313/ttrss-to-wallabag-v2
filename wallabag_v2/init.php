@@ -168,8 +168,6 @@ class Wallabag_v2 extends Plugin {
 			}
 
 		print json_encode(array(
-					"dbg1" => $query,
-					"dbg2" => $endpoint,
 					"title" => $title,
 					"status" => $status));
 	}
